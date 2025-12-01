@@ -6,11 +6,26 @@ using MCP.Shared.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add CORS for browser-based Swagger/UI testing (demo only)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddDbContext<ProductDbContext>(opt => opt.UseInMemoryDatabase("ProductsDb"));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Apply CORS before serving Swagger/UI and endpoints
+app.UseCors("AllowAll");
+
 app.UseSwagger();
 app.UseSwaggerUI();
 

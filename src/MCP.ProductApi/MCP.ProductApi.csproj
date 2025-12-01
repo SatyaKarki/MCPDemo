@@ -4,6 +4,7 @@
  <Nullable>enable</Nullable>
  <ImplicitUsings>enable</ImplicitUsings>
  <GenerateProgramFile>false</GenerateProgramFile>
+ <UseAppHost>false</UseAppHost>
  </PropertyGroup>
 
  <ItemGroup>
