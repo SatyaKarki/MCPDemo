@@ -20,6 +20,9 @@ public static class Program
         builder.Logging.AddConsole();
         builder.Logging.SetMinimumLevel(LogLevel.Information);
 
+        // Configure HttpClient for API calls
+        builder.Services.AddHttpClient();
+
         // Configure MCP Server with stdio transport
         builder.Services
             .AddMcpServer()

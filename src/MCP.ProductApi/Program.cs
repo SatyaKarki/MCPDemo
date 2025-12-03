@@ -23,6 +23,29 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Seed the database with dummy product catalog data
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ProductDbContext>();
+    
+    if (!db.Products.Any())
+    {
+        db.Products.AddRange(
+            new ProductItem { Name = "Laptop", Price = 1299.99m, Description = "High-performance laptop with 16GB RAM", IsActive = true },
+            new ProductItem { Name = "Wireless Mouse", Price = 29.99m, Description = "Ergonomic wireless mouse with USB receiver", IsActive = true },
+            new ProductItem { Name = "Mechanical Keyboard", Price = 89.99m, Description = "RGB mechanical keyboard with cherry switches", IsActive = true },
+            new ProductItem { Name = "USB-C Hub", Price = 49.99m, Description = "7-in-1 USB-C hub with HDMI and ethernet", IsActive = true },
+            new ProductItem { Name = "Webcam HD", Price = 79.99m, Description = "1080p HD webcam with built-in microphone", IsActive = true },
+            new ProductItem { Name = "Monitor 27\"", Price = 349.99m, Description = "27-inch 4K IPS monitor with HDR", IsActive = true },
+            new ProductItem { Name = "Desk Lamp", Price = 39.99m, Description = "LED desk lamp with adjustable brightness", IsActive = true },
+            new ProductItem { Name = "Headphones", Price = 149.99m, Description = "Noise-cancelling wireless headphones", IsActive = true },
+            new ProductItem { Name = "External SSD 1TB", Price = 119.99m, Description = "Portable external SSD with USB 3.2", IsActive = true },
+            new ProductItem { Name = "Smartphone Stand", Price = 19.99m, Description = "Adjustable aluminum smartphone stand", IsActive = false }
+        );
+        db.SaveChanges();
+    }
+}
+
 // Apply CORS before serving Swagger/UI and endpoints
 app.UseCors("AllowAll");
 
