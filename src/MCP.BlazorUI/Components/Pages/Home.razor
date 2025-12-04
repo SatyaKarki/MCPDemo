@@ -1,0 +1,324 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject McpClientService McpClient
+@inject ILogger<Home> Logger
+@implements IDisposable
+
+<PageTitle>MCP Client - Home</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-plugin"></i> Model Context Protocol Client
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-server"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       @bind="serverPath" 
+                                       placeholder="Enter path to MCP.Server.dll"
+                                       disabled="@McpClient.IsConnected" />
+                            </div>
+                            <small class="text-muted">
+                                Example: /path/to/MCP.Server/bin/Debug/net10.0/MCP.Server.dll
+                            </small>
+                        </div>
+                        <div class="col-md-4">
+                            @if (!McpClient.IsConnected)
+                            {
+                                <button class="btn btn-success w-100" @onclick="ConnectToServer" disabled="@isConnecting">
+                                    @if (isConnecting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="bi bi-plug"></i> Connect
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-danger w-100" @onclick="DisconnectFromServer">
+                                    <i class="bi bi-x-circle"></i> Disconnect
+                                </button>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="alert @(McpClient.IsConnected ? "alert-success" : "alert-secondary") mb-0">
+                            <i class="bi @(McpClient.IsConnected ? "bi-check-circle-fill" : "bi-exclamation-circle")"></i>
+                            <strong>Status:</strong> @(McpClient.IsConnected ? "Connected" : "Disconnected")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (McpClient.IsConnected)
+    {
+        <div class="row">
+            <!-- Tools Panel -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-tools"></i> Available Tools (@McpClient.AvailableTools.Count)
+                        </h5>
+                    </div>
+                    <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                        @if (McpClient.AvailableTools.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var tool in McpClient.AvailableTools)
+                                {
+                                    <a href="#" class="list-group-item list-group-item-action @(selectedTool?.Name == tool.Name ? "active" : "")"
+                                       @onclick="@(() => SelectTool(tool))"
+                                       @onclick:preventDefault>
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">@tool.Name</h6>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(tool.Description))
+                                        {
+                                            <small>@tool.Description</small>
+                                        }
+                                    </a>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted">
+                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                <p>No tools available</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool Invocation Panel -->
+            <div class="col-md-8">
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-chat-dots"></i> Conversational Tool Invocation
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (selectedTool != null)
+                        {
+                            <h6 class="mb-3">
+                                <i class="bi bi-gear-fill"></i> Tool: <strong>@selectedTool.Name</strong>
+                            </h6>
+                            
+                            @if (!string.IsNullOrEmpty(selectedTool.Description))
+                            {
+                                <div class="alert alert-info">
+                                    <small>@selectedTool.Description</small>
+                                </div>
+                            }
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Enter Parameters (JSON format):</label>
+                                <textarea class="form-control font-monospace" 
+                                          rows="6" 
+                                          @bind="parametersJson"
+                                          placeholder='Enter parameters in JSON format, e.g.: { "location": "Tokyo", "unit": "celsius" }'></textarea>
+                                <small class="text-muted">
+                                    Tip: Enter your parameters as JSON. Example for GetWeather: <code>{"location": "Tokyo", "unit": "celsius"}</code>
+                                </small>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button class="btn btn-primary" @onclick="InvokeTool" disabled="@isInvoking">
+                                    @if (isInvoking)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="bi bi-play-fill"></i> Invoke Tool
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-arrow-left" style="font-size: 3rem;"></i>
+                                <p>Select a tool from the list to get started</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Conversation History -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> Conversation History
+                        </h5>
+                        <button class="btn btn-sm btn-outline-light" @onclick="ClearHistory">
+                            <i class="bi bi-trash"></i> Clear
+                        </button>
+                    </div>
+                    <div class="card-body bg-light" style="max-height: 400px; overflow-y: auto;">
+                        @if (McpClient.ConversationHistory.Any())
+                        {
+                            <div class="conversation-log">
+                                @foreach (var entry in McpClient.ConversationHistory)
+                                {
+                                    <div class="mb-2 p-2 @GetConversationClass(entry)">
+                                        <pre class="mb-0" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.85rem;">@entry</pre>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted">
+                                <i class="bi bi-chat" style="font-size: 2rem;"></i>
+                                <p>No conversation history yet</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-plug" style="font-size: 5rem; color: #6c757d;"></i>
+                        <h3 class="mt-3">Welcome to MCP Client</h3>
+                        <p class="text-muted">Connect to an MCP Server to get started with exploring and using tools.</p>
+                        <div class="mt-4">
+                            <h5>Quick Start:</h5>
+                            <ol class="text-start" style="max-width: 600px; margin: 0 auto;">
+                                <li>Build the MCP.Server project: <code>dotnet build src/MCP.Server</code></li>
+                                <li>Enter the path to MCP.Server.dll above</li>
+                                <li>Click "Connect" to establish connection</li>
+                                <li>Browse available tools and invoke them interactively</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string serverPath = "";
+    private bool isConnecting = false;
+    private bool isInvoking = false;
+    private ModelContextProtocol.Client.McpClientTool? selectedTool;
+    private string parametersJson = "{}";
+
+    protected override void OnInitialized()
+    {
+        // Try to set a default server path
+        var baseDir = AppContext.BaseDirectory;
+        var possiblePath = Path.Combine(baseDir, "..", "MCP.Server", "MCP.Server.dll");
+        if (File.Exists(Path.GetFullPath(possiblePath)))
+        {
+            serverPath = Path.GetFullPath(possiblePath);
+        }
+        else
+        {
+            // Try another common location
+            var projectPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "MCP.Server", "bin", "Debug", "net10.0", "MCP.Server.dll");
+            if (File.Exists(projectPath))
+            {
+                serverPath = Path.GetFullPath(projectPath);
+            }
+        }
+
+        McpClient.OnConnectionChanged += StateHasChanged;
+        McpClient.OnToolsChanged += StateHasChanged;
+        McpClient.OnConversationChanged += StateHasChanged;
+    }
+
+    private async Task ConnectToServer()
+    {
+        isConnecting = true;
+        StateHasChanged();
+        
+        await McpClient.ConnectAsync(serverPath);
+        
+        isConnecting = false;
+        StateHasChanged();
+    }
+
+    private async Task DisconnectFromServer()
+    {
+        await McpClient.DisconnectAsync();
+        selectedTool = null;
+        parametersJson = "{}";
+        StateHasChanged();
+    }
+
+    private void SelectTool(ModelContextProtocol.Client.McpClientTool tool)
+    {
+        selectedTool = tool;
+        parametersJson = "{}";
+        StateHasChanged();
+    }
+
+    private async Task InvokeTool()
+    {
+        if (selectedTool == null) return;
+
+        isInvoking = true;
+        StateHasChanged();
+
+        try
+        {
+            var parameters = JsonSerializer.Deserialize<Dictionary<string, object?>>(parametersJson);
+            if (parameters == null)
+            {
+                parameters = new Dictionary<string, object?>();
+            }
+
+            await McpClient.CallToolAsync(selectedTool.Name, parameters);
+        }
+        catch (JsonException ex)
+        {
+            McpClient.ConversationHistory.Add($"[{DateTime.Now:HH:mm:ss}] Error: Invalid JSON format - {ex.Message}");
+        }
+
+        isInvoking = false;
+        StateHasChanged();
+    }
+
+    private void ClearHistory()
+    {
+        McpClient.ClearConversation();
+    }
+
+    private string GetConversationClass(string entry)
+    {
+        if (entry.Contains("User:"))
+            return "bg-info bg-opacity-10 border-start border-info border-3";
+        if (entry.Contains("Assistant:"))
+            return "bg-success bg-opacity-10 border-start border-success border-3";
+        return "bg-secondary bg-opacity-10 border-start border-secondary border-3";
+    }
+
+    public void Dispose()
+    {
+        McpClient.OnConnectionChanged -= StateHasChanged;
+        McpClient.OnToolsChanged -= StateHasChanged;
+        McpClient.OnConversationChanged -= StateHasChanged;
+    }
+}
+
