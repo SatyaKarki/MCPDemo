@@ -1,6 +1,6 @@
 # MyFirstMCPDemo
 
-A comprehensive learning project demonstrating the **Model Context Protocol (MCP)** implementation with .NET 10. This solution includes an MCP Server with real-world tools, an MCP Client library, and a Host application for testing.
+A comprehensive learning project demonstrating the **Model Context Protocol (MCP)** implementation with .NET 10. This solution includes an MCP Server with real-world tools, an MCP Client library, a Console Host application, and a **Blazor Web UI** for interactive tool exploration.
 
 ## 📋 Table of Contents
 
@@ -10,6 +10,7 @@ A comprehensive learning project demonstrating the **Model Context Protocol (MCP
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
 - [Running the Demo](#running-the-demo)
+- [Blazor Web UI](#blazor-web-ui)
 - [Available Tools](#available-tools)
 - [Testing](#testing)
 - [Integration with AI Assistants](#integration-with-ai-assistants)
@@ -22,6 +23,7 @@ The **Model Context Protocol (MCP)** is an open protocol that standardizes how A
 
 - Building an MCP Server that exposes tools to AI assistants
 - Creating an MCP Client to connect to servers
+- Building a modern Blazor Web UI for interactive tool exploration
 - Real-world use cases including weather, calculator, todo management, and text utilities
 
 ## 🏗️ Architecture
@@ -62,13 +64,26 @@ MyFirstMCPDemo/
 │   │   │   ├── WeatherTool.cs
 │   │   │   ├── CalculatorTool.cs
 │   │   │   ├── TodoTool.cs
-│   │   │   └── TextUtilityTool.cs
+│   │   │   ├── TextUtilityTool.cs
+│   │   │   ├── ProductTool.cs
+│   │   │   └── ProductCatalogTool.cs
 │   │   └── Program.cs
 │   │
 │   ├── MCP.Client/           # MCP Client library
 │   │   └── Program.cs
 │   │
-│   └── MCP.Host/             # Demo host application
+│   ├── MCP.Host/             # Console demo application
+│   │   └── Program.cs
+│   │
+│   ├── MCP.BlazorUI/         # Blazor Web UI for MCP
+│   │   ├── Components/
+│   │   │   └── Pages/
+│   │   │       └── Home.razor
+│   │   ├── Services/
+│   │   │   └── McpClientService.cs
+│   │   └── Program.cs
+│   │
+│   └── MCP.ProductApi/       # Sample API for product tools
 │       └── Program.cs
 │
 ├── tests/
@@ -128,6 +143,68 @@ To run the MCP Server in standalone mode (for integration with AI assistants):
 ```bash
 dotnet run --project src/MCP.Server
 ```
+
+## 🌐 Blazor Web UI
+
+The solution includes a modern **Blazor Web UI** that provides an interactive, user-friendly interface for connecting to the MCP Server and invoking tools.
+
+### Features
+
+✨ **Connection Management**
+- Easy server connection with auto-detected server path
+- Real-time connection status indicator
+- One-click connect/disconnect
+
+🔧 **Tool Explorer**
+- Browse all 35+ available tools
+- View tool descriptions
+- Interactive tool selection
+
+💬 **Conversational Interface**
+- JSON-based parameter input
+- Real-time tool invocation
+- Formatted response display
+- Complete conversation history
+
+### Screenshots
+
+#### Initial View (Disconnected)
+![Blazor UI Disconnected](https://github.com/user-attachments/assets/96587e7b-c03c-4f38-a358-741f5d829827)
+
+#### Connected with Tools Listed
+![Blazor UI Connected](https://github.com/user-attachments/assets/73219578-134a-40a0-ba72-d06cb1af02cc)
+
+#### Tool Invocation with Results
+![Blazor UI Tool Invocation](https://github.com/user-attachments/assets/fd27382b-4341-438e-9361-d39a6d620011)
+
+#### Multiple Tool Calls in Conversation
+![Blazor UI Multiple Tools](https://github.com/user-attachments/assets/74557959-08a9-4310-ae80-b365f9af68c8)
+
+### Running the Blazor UI
+
+1. **Build the solution** (if not already done):
+   ```bash
+   dotnet build
+   ```
+
+2. **Run the Blazor UI**:
+   ```bash
+   dotnet run --project src/MCP.BlazorUI
+   ```
+
+3. **Access the UI**:
+   - Open your browser to `http://localhost:5233`
+   - The server path should be auto-detected
+   - Click "Connect" to connect to the MCP Server
+   - Browse available tools and start invoking them!
+
+### Using the Blazor UI
+
+1. **Connect to Server**: Enter the path to MCP.Server.dll (or use the auto-detected path) and click "Connect"
+2. **Select a Tool**: Click on any tool from the "Available Tools" panel
+3. **Enter Parameters**: Use JSON format to provide tool parameters, e.g., `{"location": "Tokyo", "unit": "celsius"}`
+4. **Invoke Tool**: Click "Invoke Tool" to execute the tool and see results
+5. **View History**: All tool calls and responses are logged in the "Conversation History" panel
 
 ## 🛠️ Available Tools
 
