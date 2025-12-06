@@ -125,7 +125,7 @@ public static class Program
     {
         Console.WriteLine("📋 Available Tools:");
         Console.WriteLine(new string('-', 60));
-
+        //fetches all MCP tools registered on the server
         var tools = await client.ListToolsAsync();
         foreach (var tool in tools)
         {
